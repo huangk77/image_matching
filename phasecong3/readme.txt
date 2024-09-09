@@ -1,0 +1,1 @@
+本工程实现了所有phasecong3提取三个特征图的流程，输出的结果已经与matlab对比过，除了rayleighmode函数与matlab输出有差别外，其他基本一样，可以参考里面的矩阵使用方法，有问题直接提issue。
