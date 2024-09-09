@@ -1,0 +1,49 @@
+void meshgrid(const cv::Range &xRange, const cv::Range &yRange, cv::Mat &x_grid, cv::Mat &y_grid, float norm_cols, float norm_rows)
+{
+    // Create x and y matrices based on the ranges
+    cv::Mat xRow = cv::Mat(1, xRange.end - xRange.start, CV_32FC1);
+    cv::Mat yCol = cv::Mat(yRange.end - yRange.start, 1, CV_32FC1);
+
+    for (int i = 0; i < xRow.cols; i++)
+    {
+        xRow.at<float>(0, i) = static_cast<float>(xRange.start + i) / norm_cols;
+    }
+
+    for (int i = 0; i < yCol.rows; i++)
+    {
+        yCol.at<float>(i, 0) = static_cast<float>(yRange.start + i) / norm_rows;
+    }
+
+    // std::cout << "xRow = " << xRow << std::endl;
+    // std::cout << "yCol = " << yCol << std::endl;
+
+    // Repeat the vectors to form 2D grid
+    cv::repeat(xRow, yCol.rows, 1, x_grid);
+    cv::repeat(yCol, 1, xRow.cols, y_grid);
+}   
+
+
+ // Calculate xrange
+    cv::Range xRange;
+    if (_col % 2)
+    {
+        xRange = cv::Range(-(_col - 1) / 2, (_col - 1) / 2 + 1);  // Equivalent to -5:5 in MATLAB
+    }
+    else
+    {
+        xRange = cv::Range(-(_col) / 2, (_col - 1) / 2 + 1);
+    }
+
+// Calculate yrange
+    cv::Range yRange;
+    if (_row % 2)
+    {
+        yRange = cv::Range(-(_row - 1) / 2, (_row - 1) / 2 + 1);
+    }
+    else
+    {
+        yRange = cv::Range(-(_row) / 2, (_row - 1) / 2 + 1);
+    }
+
+    cv::Mat grid_x, grid_y;
+    meshgrid(xRange, yRange, grid_x, grid_y, _col, _row);
