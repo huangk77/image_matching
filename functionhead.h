@@ -2,6 +2,15 @@
 #define _FUNCTIONHEAD_H
 
 
+typedef struct
+{
+  float x;
+  float y;
+  float layers;
+  float attr_1;  // 关键点属性
+  float attr_2;  // 关键点属性 预留
+  float attr_3;  // 关键点属性 预留
+} WSSFKeyPts;
 
 // Create_Image_space
 int Create_Image_space(
@@ -30,8 +39,9 @@ double sigma_1,
 double ratio,
 int Scale_Invariance,
 int nOctaves,
-cv::Mat& position_1,
-cv::Mat& position_2,
+// output
+std::ventor<WSSFKeyPts>& position_1,
+std::ventor<WSSFKeyPts>& position_2,
 std::vector<cv::Mat>& Bolb_gradient_cell,
 std::vector<cv::Mat>& Corner_gradient_cell,
 std::vector<cv::Mat>& Bolb_angle_cell,
@@ -44,11 +54,11 @@ int GLOH_descriptors(
 const std::vector<cv::Mat>& gradient,
 const std::vector<cv::Mat>& angle,
 const cv::Mat& key_point_array,
-const cv::Mat& Path_Block,
-double ratio,
-double sigma_1,
-std::vector<cv::Mat>& descriptors_des,
-std::vector<cv::Mat>& descriptors_locs
+const int Path_Block,
+float ratio,
+float sigma_1,
+cv::Mat &descriptors_des,
+std::vector<WSSFKeyPts>& descriptors_locs
 );
 
 
@@ -83,8 +93,8 @@ int npt1,
 int npt2, 
 double sigma_1,
 double ratio,
-cv::Mat& Blob_key_point_array,
-cv::Mat& Corner_key_point_array
+std::vector<WSSFKeyPts> &Blob_key_point_array,
+std::vector<WSSFKeyPts> &Corner_key_point_array
 );
 
 
@@ -92,9 +102,9 @@ cv::Mat& Corner_key_point_array
 
 //WSSF_selectMax_NMS
 int WSSF_selectMax_NMS(
-const cv::Mat& AFPts,
+const std::vector<WSSFKeyPts> AFPts,
 int window,
-cv::Mat& keypoints
+std::vector<WSSFKeyPts> &keypoints
 );
 
 
@@ -108,7 +118,7 @@ const std::vector<cv::Mat>& angle,
 const std::vector<cv::Mat>& nonelinear_space,
 double sigma_1,
 double ratio,
-cv::Mat& key_point_array
+std::vector<WSSFKeyPts> &key_point_array
 );
 
 #endif
