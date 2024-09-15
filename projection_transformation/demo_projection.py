@@ -54,19 +54,82 @@ def calculate_homography_matrix(k_camera, euler_w2uav, euler_uav2cam):
 
     return H_cam2cam_bird
 
-if __name__ == '__main__':
-    img = cv2.imread('./image0.png')
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    cam_parm = camera_parm()
+def correct_H(H, target_location, w, h):
+    """ Correct the homography matrix so that the projected image is fully displayed
 
+    Args:
+        H (_type_): homography matrix between two images, (ndarray, (3, 3))
+        w (_type_): image width
+        h (_type_): image height
+
+    Returns:
+        H (_type_): correct homography matrix, (ndarray, (3, 3))
+        correct_w: projection width
+        correct_h: projection height
+    """
+    corner_pts = np.array([[[0, 0], [w, 0], [0, h], [w, h], [w/2, h/2]]], dtype=np.float32)
+    corner_pts = np.concatenate((corner_pts, target_location), axis=1)
+    min_out_w, min_out_h = cv2.perspectiveTransform(corner_pts, H)[0].min(axis=0)
+    projected_center_points = np.array([[w / 2, h / 2]])
+    H[0, :] -= H[2, :] * min_out_w.astype(np.int)
+    H[1, :] -= H[2, :] * min_out_h.astype(np.int)
+    projected_location_points = projected_center_points - np.array([min_out_w, min_out_h])
+    projected_points = cv2.perspectiveTransform(corner_pts, H)
+    correct_w, correct_h = projected_points[0].max(axis=0).astype(np.int)
+    projected_center_points = projected_points[:, 4, :2]
+    projected_target_points = projected_points[:, 5, :2]
+
+    # new_projected_center_points = cv2.perspectiveTransform(projected_center_points, H)[0]
+
+    return H, correct_w, correct_h, projected_location_points, projected_center_points, projected_target_points
+
+
+if __name__ == '__main__':
+    img = cv2.imread('./image1.png')
+    cam_parm = camera_parm()
+    use_correct = True
     euler_w2uav = np.array([9, 10, 20])
     euler_uav2cam = np.array([180, 0, 0])
     t1 = time.time()
     homography_matrix = calculate_homography_matrix(cam_parm, euler_w2uav, euler_uav2cam)
-
-    result = cv2.warpPerspective(img, homography_matrix, (img.shape[1], img.shape[0]))
+    target_location = np.array([[[256, 512]]])
+    if use_correct:
+        homography_matrix_correct, correct_w, correct_h, projected_location_points, projected_center_points, projected_target_points = correct_H(homography_matrix, target_location, img.shape[1], img.shape[0])
+        result = cv2.warpPerspective(img, homography_matrix_correct, (correct_w, correct_h))
+    else:
+        result = cv2.warpPerspective(img, homography_matrix, (img.shape[1], img.shape[0]))
     t2 = time.time()
     print('time:', t2 - t1)
+
+    cv2.putText(result, 'location', (int(projected_location_points[0][0]), int(projected_location_points[0][1])),
+                cv2.FONT_HERSHEY_COMPLEX, 1.0, (100, 200, 200), 1)
+    cv2.circle(result, (int(projected_location_points[0][0]), int(projected_location_points[0][1])), 5, (0, 0, 255), -1)
+
+    cv2.putText(result, 'center', (int(projected_center_points[0][0]), int(projected_center_points[0][1])),
+                cv2.FONT_HERSHEY_COMPLEX, 1.0, (100, 200, 200), 1)
+    cv2.circle(result, (int(projected_center_points[0][0]), int(projected_center_points[0][1])), 5, (0, 0, 255), -1)
+
+    cv2.putText(result, 'target', (int(projected_target_points[0][0]), int(projected_target_points[0][1])),
+                cv2.FONT_HERSHEY_COMPLEX, 1.0, (100, 200, 200), 1)
+    cv2.circle(result, (int(projected_target_points[0][0]), int(projected_target_points[0][1])), 5, (0, 0, 255), -1)
+
+    cv2.arrowedLine(result, (int(projected_location_points[0][0]), int(projected_location_points[0][1])),
+                    (int(projected_center_points[0][0]), int(projected_center_points[0][1])), (0, 0, 255), 2, tipLength=0.05)
+
+    cv2.arrowedLine(result, (int(projected_location_points[0][0]), int(projected_location_points[0][1])),
+                    (int(projected_target_points[0][0]), int(projected_target_points[0][1])), (0, 0, 255), 2,
+                    tipLength=0.05)
+
+    vec_center_target = projected_target_points - projected_location_points
+    vec_center_target = vec_center_target / np.linalg.norm(vec_center_target)
+
+    vec_center_location = projected_center_points - projected_location_points
+    vec_center_location = vec_center_location / np.linalg.norm(vec_center_location)
+
+    angle = np.arccos(np.dot(vec_center_target[0], vec_center_location[0]))
+    angle = angle / np.pi * 180
+
+    print('miss angle:', angle)  # 逆时针为正，顺时针为负
 
     cv2.imshow('result', result)
     cv2.waitKey(0)
