@@ -2,6 +2,11 @@ import cv2
 import numpy as np
 import time
 def camera_parm():
+    """ Camera intrinsic matrix
+
+    Returns:
+        k_camera (_type_): camera intrinsic matrix, (ndarray, (3, 3))
+    """
     focal_length = 24  # mm
     sensor_size = 7.73  # mm
     camera_width = 640  # px
@@ -20,7 +25,16 @@ def camera_parm():
                 [0, 0, 1]])
     return k_camera
 
-def euler2rotation_matrix(euler):
+def euler2rotation_matrix(euler, is_internal_rotation=False):
+    """ Convert euler angle to rotation matrix
+
+    Args:
+        euler (_type_): euler angle, radian (ndarray, (3,))
+        is_internal_rotation (_type_): internal rotation or external rotation (bool)
+
+    Returns:
+        rotation_matrix (_type_): rotation matrix (ndarray, (3, 3))
+    """
     alpha = euler[0] / 180 * np.pi
     beta = euler[1] / 180 * np.pi
     gamma = euler[2] / 180 * np.pi
@@ -37,12 +51,28 @@ def euler2rotation_matrix(euler):
                     [np.sin(gamma), np.cos(gamma), 0],
                     [0, 0, 1]])
 
-    rotation_matrix = np.dot(r_z, np.dot(r_y, r_x))
+    if is_internal_rotation:
+        # case: internal rotation use Z-X-Y order, which is yaw-pitch-roll
+        rotation_matrix = np.dot(r_y, np.dot(r_x, r_z))
+    else:
+        # case: external rotation use Z-Y-X order
+        rotation_matrix = np.dot(r_z, np.dot(r_y, r_x))
     return rotation_matrix
 
 def calculate_homography_matrix(k_camera, euler_w2uav, euler_uav2cam):
-    R_w2uav = euler2rotation_matrix(euler_w2uav)
-    R_uav2cam = euler2rotation_matrix(euler_uav2cam)
+    """ Calculate the homography matrix between two images
+
+    Args:
+        k_camera (_type_): camera intrinsic matrix, (ndarray, (3, 3))
+        euler_w2uav (_type_): euler angle from world to uav, radian (ndarray, (3,))
+        euler_uav2cam (_type_): euler angle from uav to camera, radian (ndarray, (3,))
+
+    Returns:
+        H_cam2cam_bird (_type_): homography matrix between two images, (ndarray, (3, 3))
+    """
+    R_w2uav = euler2rotation_matrix(euler_w2uav, is_internal_rotation=True)  # in the ENU coordinate system (pitch, roll, yaw)
+    R_uav2cam = euler2rotation_matrix(euler_uav2cam, is_internal_rotation=True)  # in the UAV body coordinate system (pitch, roll, yaw)
+    # pthch, roll, yaw, counterclockwise positive
 
     R_w2uav_bird = np.eye(3)
     R_w2cam_bird = np.dot(R_w2uav_bird, R_uav2cam.T)  # R_w2cam = R_w2uav * R_uav2cam
