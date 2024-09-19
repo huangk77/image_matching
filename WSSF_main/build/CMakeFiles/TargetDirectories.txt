@@ -1,0 +1,3 @@
+/home/starsz/Documents/WSSF_main/build/CMakeFiles/WSSF.dir
+/home/starsz/Documents/WSSF_main/build/CMakeFiles/edit_cache.dir
+/home/starsz/Documents/WSSF_main/build/CMakeFiles/rebuild_cache.dir
