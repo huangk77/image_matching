@@ -150,16 +150,26 @@ if __name__ == '__main__':
                     (int(projected_target_points[0][0]), int(projected_target_points[0][1])), (0, 0, 255), 2,
                     tipLength=0.05)
 
-    vec_center_target = projected_target_points - projected_location_points
-    vec_center_target = vec_center_target / np.linalg.norm(vec_center_target)
+    vec_center_target_original = projected_target_points - projected_location_points
+    vec_center_target = vec_center_target_original / np.linalg.norm(vec_center_target_original)
 
-    vec_center_location = projected_center_points - projected_location_points
-    vec_center_location = vec_center_location / np.linalg.norm(vec_center_location)
+    vec_center_location_original = projected_center_points - projected_location_points
+    vec_center_location = vec_center_location_original / np.linalg.norm(vec_center_location_original)
 
-    angle = np.arccos(np.dot(vec_center_target[0], vec_center_location[0]))
-    angle = angle / np.pi * 180
+    yaw_angle = np.arccos(np.dot(vec_center_target[0], vec_center_location[0]))
+    yaw_angle = yaw_angle / np.pi * 180
 
-    print('miss angle:', angle)  # 逆时针为正，顺时针为负
+    # init value to solve the pitch angle
+    height = 400  # m
+    pitch = 9  # degree
+
+    # calculate the pitch angle by vector projection
+    projected_target2center_location = np.dot(vec_center_target_original[0], vec_center_location_original[0]) / np.linalg.norm(vec_center_location_original)
+    real_projected_target2center_location = projected_target2center_location * height / (np.linalg.norm(vec_center_location_original) * np.tan(pitch / 180 * np.pi))
+    pitch_angle = pitch - np.arctan(height / real_projected_target2center_location) / np.pi * 180
+
+    print('miss angle yaw:', yaw_angle)  # 逆时针为正，顺时针为负
+    print('miss angle pitch:', pitch_angle)  # 逆时针为正，顺时针为负
 
     cv2.imshow('result', result)
     cv2.waitKey(0)
